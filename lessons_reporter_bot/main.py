@@ -67,6 +67,7 @@ bot_service = BotService(
     authorization_service=authorization_service,
 )
 telegram_bot = telebot.TeleBot(token=settings.bot_token)
+telegram_bot.remove_webhook()
 
 LAST_MESSAGE_IDS: dict[int, list[int]] = defaultdict(list)
 
