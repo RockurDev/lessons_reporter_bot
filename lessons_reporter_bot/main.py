@@ -337,4 +337,4 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
 if __name__ == '__main__':
     SQLModel.metadata.create_all(engine)
     print('Started bot')
-    telegram_bot.polling(non_stop=True, interval=0.5)
+    telegram_bot.polling(non_stop=True)
