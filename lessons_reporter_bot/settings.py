@@ -13,3 +13,4 @@ class Settings(pydantic_settings.BaseSettings):
     bot_token: str
     superusers: list[UserId]
     database_url: str
+    webhook_url: str | None = None

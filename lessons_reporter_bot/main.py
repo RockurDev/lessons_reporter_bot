@@ -111,6 +111,7 @@ def process_bot_service_handler_results(
                     LAST_MESSAGE_IDS[chat_id].append(sent_message.message_id)
 
             case BotServiceRegisterNextMessageHandler():
+
                 def callback(message: Message) -> None:
                     process_bot_service_handler_results(
                         *result.callback(message.text), chat_id=chat_id
@@ -338,4 +339,16 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
 if __name__ == '__main__':
     SQLModel.metadata.create_all(engine)
     print('Started bot')
-    telegram_bot.polling(non_stop=True, timeout=20, long_polling_timeout=20, allowed_updates=['message', 'callback_query'])
+    telegram_bot.delete_webhook()
+    allowed_updates = ['message', 'callback_query']
+    if settings.webhook_url:
+        telegram_bot.run_webhooks(
+            port=80, webhook_url=settings.webhook_url, allowed_updates=allowed_updates
+        )
+    else:
+        telegram_bot.polling(
+            non_stop=True,
+            timeout=20,
+            long_polling_timeout=20,
+            allowed_updates=allowed_updates,
+        )
