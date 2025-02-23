@@ -349,7 +349,8 @@ if __name__ == '__main__':
     if settings.webhook_url:
         telegram_bot.run_webhooks(
             listen= "0.0.0.0",
-            port=80, webhook_url=settings.webhook_url, allowed_updates=allowed_updates
+            
+            port=80,url_path="/", webhook_url=settings.webhook_url, allowed_updates=allowed_updates
         )
     else:
         telegram_bot.polling(
