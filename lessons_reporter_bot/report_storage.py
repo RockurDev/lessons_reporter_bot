@@ -2,8 +2,8 @@ import logging
 import time
 from typing import Callable, Optional, ParamSpec, Sequence, TypeVar
 
-from sqlmodel import Session, desc, func, select
 import sqlalchemy
+from sqlmodel import Session, desc, func, select
 
 from lessons_reporter_bot.models import Report
 
@@ -15,7 +15,9 @@ def measure_time(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         before_time = time.time()
         result = func(*args, **kwargs)
-        logging.error(f'call to {func} took {round((time.time() - before_time)*1000)} ms')
+        logging.error(
+            f'call to {func} took {round((time.time() - before_time)*1000)} ms'
+        )
         return result
 
     return wrapper
@@ -39,12 +41,18 @@ class ReportStorage:
             return report.report_id
 
     @measure_time
-    def list_reports(self, order_by: str | None = None, descending: bool = False) -> Sequence[Report]:
+    def list_reports(
+        self, order_by: str | None = None, descending: bool = False
+    ) -> Sequence[Report]:
         with Session(self.engine) as session:
             statement = select(Report)
             if order_by:
                 column = getattr(Report, order_by)
-                statement = statement.order_by(desc(column)) if descending else statement.order_by(column)
+                statement = (
+                    statement.order_by(desc(column))
+                    if descending
+                    else statement.order_by(column)
+                )
             return session.exec(statement).all()
 
     def list_reports_by_student_id(
@@ -54,7 +62,11 @@ class ReportStorage:
             statement = select(Report).where(Report.student_id == student_id)
             if order_by:
                 column = getattr(Report, order_by)
-                statement = statement.order_by(desc(column)) if descending else statement.order_by(column)
+                statement = (
+                    statement.order_by(desc(column))
+                    if descending
+                    else statement.order_by(column)
+                )
             return session.exec(statement).all()
 
     def get_report_by_id(self, report_id: int) -> Optional[Report]:
