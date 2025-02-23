@@ -36,6 +36,7 @@ from lessons_reporter_bot.models import (
     FormattedPaginationItem,
     Report,
     ReportData,
+    Student,
 )
 from lessons_reporter_bot.report_builder import ReportBuilder
 from lessons_reporter_bot.report_storage import ReportStorage
@@ -121,16 +122,12 @@ class BotService:
                 ),
                 BotServiceMessageButton(
                     title='Назад',
-                    callback_data=ShowOneItemCallbackData(
-                        i_t=data.i_t, page=data.page, i_f=None, i_id=data.i_id
-                    ),
+                    callback_data=ShowOneItemCallbackData(i_t=data.i_t, page=data.page, i_f=None, i_id=data.i_id),
                 ),
             ],
         )
 
-    def delete_confirmed_one_item(
-        self, data: DeleteConfirmedItemCallbackData
-    ) -> BotServiceMessage:
+    def delete_confirmed_one_item(self, data: DeleteConfirmedItemCallbackData) -> BotServiceMessage:
         if data.i_t == 'S':
             if self.student_storage.delete_student(data.i_id):
                 text = 'Студент удалён'
@@ -147,9 +144,7 @@ class BotService:
             buttons=[
                 BotServiceMessageButton(
                     title='Назад',
-                    callback_data=ShowItemsListCallbackData(
-                        i_t=data.i_t, i_f=None, page=data.page
-                    ),
+                    callback_data=ShowItemsListCallbackData(i_t=data.i_t, i_f=None, page=data.page),
                 ),
             ],
         )
@@ -157,9 +152,7 @@ class BotService:
     def show_one_item(self, data: ShowOneItemCallbackData) -> BotServiceMessage:
         go_back_button = BotServiceMessageButton(
             title='Назад',
-            callback_data=ShowItemsListCallbackData(
-                i_t=data.i_t, page=data.page, i_f=data.i_f, i_id=data.i_id
-            ),
+            callback_data=ShowItemsListCallbackData(i_t=data.i_t, page=data.page, i_f=data.i_f, i_id=data.i_id),
         )
 
         if data.i_t == 'S':
@@ -173,9 +166,7 @@ class BotService:
                 buttons=[
                     BotServiceMessageButton(
                         title='Отчёты',
-                        callback_data=ShowItemsListCallbackData(
-                            i_t='R', page=data.page, i_f=data.i_id
-                        ),
+                        callback_data=ShowItemsListCallbackData(i_t='R', page=data.page, i_f=data.i_id),
                     ),
                     BotServiceMessageButton(
                         title='Удалить',
@@ -187,15 +178,11 @@ class BotService:
                     ),
                     BotServiceMessageButton(
                         title='Изменить ФИО',
-                        callback_data=UpdateStudentNameCallbackData(
-                            page=data.page, student_id=data.i_id
-                        ),
+                        callback_data=UpdateStudentNameCallbackData(page=data.page, student_id=data.i_id),
                     ),
                     BotServiceMessageButton(
                         title='Изменить id родителя',
-                        callback_data=AddParentIdToStudentCallbackData(
-                            page=data.page, student_id=data.i_id
-                        ),
+                        callback_data=AddParentIdToStudentCallbackData(page=data.page, student_id=data.i_id),
                     ),
                     go_back_button,
                 ],
@@ -257,15 +244,11 @@ class BotService:
                 extra_buttons = [
                     BotServiceMessageButton(
                         title='Назад',
-                        callback_data=ShowOneItemCallbackData(
-                            i_t='S', i_f=data.i_f, page=data.page, i_id=data.i_f
-                        ),
+                        callback_data=ShowOneItemCallbackData(i_t='S', i_f=data.i_f, page=data.page, i_id=data.i_f),
                     )
                 ]
             else:
-                reports_list = self.report_storage.list_reports(
-                    order_by='lesson_date', descending=True
-                )
+                reports_list = self.report_storage.list_reports(order_by='lesson_date', descending=True)
                 extra_buttons = [
                     BotServiceMessageButton(
                         title='Отправить сохранённые отчёты',
@@ -273,15 +256,22 @@ class BotService:
                     )
                 ]
 
+            student_id_to_student_map = {}
+
+            def get_cached_student_by_id(student_id: int) -> Student | None:
+                if cached_student := student_id_to_student_map.get(student_id):
+                    return cached_student
+                retrieved_student = self.student_storage.get_student_by_id(student_id)
+                student_id_to_student_map[student_id] = retrieved_student
+                return retrieved_student
+
             formatted_items = [
                 FormattedPaginationItem(
                     title=f'{report.lesson_date.strftime('%d-%m-%Y')} — {student.name}',
                     id=report.report_id,
                 )
                 for report in reports_list
-                if (
-                    student := self.student_storage.get_student_by_id(report.student_id)
-                )
+                if (student := get_cached_student_by_id(report.student_id))
             ]
             text = 'Выберите отчёт:'
             row_width = 1
@@ -320,9 +310,7 @@ class BotService:
                 buttons.append(
                     BotServiceMessageButton(
                         title='Назад',
-                        callback_data=ShowItemsListCallbackData(
-                            i_t=data.i_t, i_f=None, page=data.page - 1
-                        ),
+                        callback_data=ShowItemsListCallbackData(i_t=data.i_t, i_f=None, page=data.page - 1),
                     )
                 )
 
@@ -330,18 +318,12 @@ class BotService:
                 buttons.append(
                     BotServiceMessageButton(
                         title='Вперёд',
-                        callback_data=ShowItemsListCallbackData(
-                            i_t=data.i_t, i_f=None, page=data.page + 1
-                        ),
+                        callback_data=ShowItemsListCallbackData(i_t=data.i_t, i_f=None, page=data.page + 1),
                     )
                 )
 
         buttons += extra_buttons
-        buttons.append(
-            BotServiceMessageButton(
-                title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-            )
-        )
+        buttons.append(BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()))
         return BotServiceMessage(text=text, buttons=buttons, row_width=row_width)
 
     def create_topic(
@@ -349,13 +331,7 @@ class BotService:
     ) -> list[BotServiceMessage | BotServiceRegisterNextMessageHandler]:
         def process_topic_name(message_text: str) -> list[BotServiceMessage]:
             topic_id = self.topic_storage.add_topic(message_text)
-            return [
-                self.show_one_item(
-                    ShowOneItemCallbackData(
-                        i_t='T', page=data.page, i_f=None, i_id=topic_id
-                    )
-                )
-            ]
+            return [self.show_one_item(ShowOneItemCallbackData(i_t='T', page=data.page, i_f=None, i_id=topic_id))]
 
         return [
             BotServiceMessage(text='Введите название темы:'),
@@ -366,17 +342,9 @@ class BotService:
         self, data: CreateStudentCallbackData
     ) -> list[BotServiceMessage | BotServiceRegisterNextMessageHandler]:
         def process_student_name_input(message_text: str) -> list[BotServiceMessage]:
-            student_name = ' '.join(
-                map(lambda word: word.capitalize(), message_text.strip().split())
-            )
+            student_name = ' '.join(map(lambda word: word.capitalize(), message_text.strip().split()))
             student_id = self.student_storage.add_student(student_name)
-            return [
-                self.show_one_item(
-                    ShowOneItemCallbackData(
-                        i_t='S', page=data.page, i_f=None, i_id=student_id
-                    )
-                )
-            ]
+            return [self.show_one_item(ShowOneItemCallbackData(i_t='S', page=data.page, i_f=None, i_id=student_id))]
 
         return [
             BotServiceMessage(
@@ -384,9 +352,7 @@ class BotService:
                 buttons=[
                     BotServiceMessageButton(
                         title='Назад',
-                        callback_data=ShowItemsListCallbackData(
-                            i_t='S', i_f=None, page=data.page
-                        ),
+                        callback_data=ShowItemsListCallbackData(i_t='S', i_f=None, page=data.page),
                     ),
                 ],
             ),
@@ -404,20 +370,10 @@ class BotService:
             except ValueError:
                 return [
                     BotServiceMessage(text='Введите id родителя:'),
-                    BotServiceRegisterNextMessageHandler(
-                        process_student_parent_id_input
-                    ),
+                    BotServiceRegisterNextMessageHandler(process_student_parent_id_input),
                 ]
-            self.student_storage.add_parent_id_to_student(
-                student_id=student_id, parent_id=parent_id
-            )
-            return [
-                self.show_one_item(
-                    ShowOneItemCallbackData(
-                        i_t='S', page=data.page, i_f=None, i_id=student_id
-                    )
-                )
-            ]
+            self.student_storage.add_parent_id_to_student(student_id=student_id, parent_id=parent_id)
+            return [self.show_one_item(ShowOneItemCallbackData(i_t='S', page=data.page, i_f=None, i_id=student_id))]
 
         return [
             BotServiceMessage(
@@ -425,9 +381,7 @@ class BotService:
                 buttons=[
                     BotServiceMessageButton(
                         title='Назад',
-                        callback_data=ShowOneItemCallbackData(
-                            i_t='S', page=data.page, i_f=None, i_id=data.student_id
-                        ),
+                        callback_data=ShowOneItemCallbackData(i_t='S', page=data.page, i_f=None, i_id=data.student_id),
                     )
                 ],
             ),
@@ -438,9 +392,7 @@ class BotService:
         self, data: UpdateStudentNameCallbackData
     ) -> list[BotServiceMessage | BotServiceRegisterNextMessageHandler]:
         def process_student_name_input(message_text: str) -> list[BotServiceMessage]:
-            self.student_storage.update_student_name(
-                student_id=data.student_id, student_name=message_text
-            )
+            self.student_storage.update_student_name(student_id=data.student_id, student_name=message_text)
             return [
                 self.show_one_item(
                     ShowOneItemCallbackData(
@@ -458,9 +410,7 @@ class BotService:
                 buttons=[
                     BotServiceMessageButton(
                         title='Назад',
-                        callback_data=ShowOneItemCallbackData(
-                            i_t='S', page=data.page, i_f=None, i_id=data.student_id
-                        ),
+                        callback_data=ShowOneItemCallbackData(i_t='S', page=data.page, i_f=None, i_id=data.student_id),
                     )
                 ],
             ),
@@ -473,23 +423,17 @@ class BotService:
             buttons=[
                 BotServiceMessageButton(
                     title='Сегодня',
-                    callback_data=ReportBuilder1SetValueFromButtonCallbackData(
-                        lesson_day='today'
-                    ),
+                    callback_data=ReportBuilder1SetValueFromButtonCallbackData(lesson_day='today'),
                 ),
                 BotServiceMessageButton(
                     title='Вчера',
-                    callback_data=ReportBuilder1SetValueFromButtonCallbackData(
-                        lesson_day='yesterday'
-                    ),
+                    callback_data=ReportBuilder1SetValueFromButtonCallbackData(lesson_day='yesterday'),
                 ),
                 BotServiceMessageButton(
                     title='Ввести дату:',
                     callback_data=ReportBuilder1EnterManuallyCallbackData(),
                 ),
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
             ],
         )
 
@@ -539,11 +483,7 @@ class BotService:
         return [
             BotServiceMessage(
                 text="Введите дату в формате ('ДД-ММ-ГГГГ'):",
-                buttons=[
-                    BotServiceMessageButton(
-                        title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                    )
-                ],
+                buttons=[BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData())],
             ),
             BotServiceRegisterNextMessageHandler(process_lesson_date),
         ]
@@ -574,9 +514,7 @@ class BotService:
             buttons.append(
                 BotServiceMessageButton(
                     title='Назад',
-                    callback_data=ReportBuilderShowItemListCallbackData(
-                        i_t=data.i_t, page=data.page - 1
-                    ),
+                    callback_data=ReportBuilderShowItemListCallbackData(i_t=data.i_t, page=data.page - 1),
                 )
             )
 
@@ -584,23 +522,15 @@ class BotService:
             buttons.append(
                 BotServiceMessageButton(
                     title='Вперёд',
-                    callback_data=ReportBuilderShowItemListCallbackData(
-                        i_t=data.i_t, page=data.page + 1
-                    ),
+                    callback_data=ReportBuilderShowItemListCallbackData(i_t=data.i_t, page=data.page + 1),
                 )
             )
 
-        buttons.append(
-            BotServiceMessageButton(
-                title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-            )
-        )
+        buttons.append(BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()))
 
         return BotServiceMessage(text='Выберите тему:', buttons=buttons, row_width=2)
 
-    def build_report_3_student_setting(
-        self, data: ReportBuilderShowItemListCallbackData
-    ) -> BotServiceMessage:
+    def build_report_3_student_setting(self, data: ReportBuilderShowItemListCallbackData) -> BotServiceMessage:
         formatted_items = [
             FormattedPaginationItem(title=student.name, id=student.student_id)
             for student in self.student_storage.list_students(order_by='name')
@@ -623,9 +553,7 @@ class BotService:
             buttons.append(
                 BotServiceMessageButton(
                     title='Назад',
-                    callback_data=ReportBuilderShowItemListCallbackData(
-                        i_t=data.i_t, page=data.page - 1
-                    ),
+                    callback_data=ReportBuilderShowItemListCallbackData(i_t=data.i_t, page=data.page - 1),
                 )
             )
 
@@ -633,17 +561,11 @@ class BotService:
             buttons.append(
                 BotServiceMessageButton(
                     title='Вперёд',
-                    callback_data=ReportBuilderShowItemListCallbackData(
-                        i_t=data.i_t, page=data.page + 1
-                    ),
+                    callback_data=ReportBuilderShowItemListCallbackData(i_t=data.i_t, page=data.page + 1),
                 )
             )
 
-        buttons.append(
-            BotServiceMessageButton(
-                title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-            )
-        )
+        buttons.append(BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()))
 
         return BotServiceMessage(text='Выберите студента:', buttons=buttons)
 
@@ -653,25 +575,17 @@ class BotService:
             buttons=[
                 BotServiceMessageButton(
                     title='Выполнено',
-                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(
-                        homework_status=2
-                    ),
+                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(homework_status=2),
                 ),
                 BotServiceMessageButton(
                     title='Выполнено частично',
-                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(
-                        homework_status=1
-                    ),
+                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(homework_status=1),
                 ),
                 BotServiceMessageButton(
                     title='Не выполнено',
-                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(
-                        homework_status=0
-                    ),
+                    callback_data=ReportBuilder5SetHomeworkStatusCallbackData(homework_status=0),
                 ),
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
             ],
         )
 
@@ -687,9 +601,7 @@ class BotService:
                     title='Слабая',
                     callback_data=ReportBuilder6SetIsProactiveCallbackData(is_active=0),
                 ),
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
             ],
         )
 
@@ -705,9 +617,7 @@ class BotService:
                     title='Не оплачено',
                     callback_data=ReportBuilder7SetIsPaidCallbackData(payment_status=0),
                 ),
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
             ],
         )
 
@@ -723,9 +633,7 @@ class BotService:
                     title='Пропустить',
                     callback_data=ReportBuilderShowReportPreviewCallbackData(),
                 ),
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
             ],
         )
 
@@ -740,9 +648,7 @@ class BotService:
             BotServiceMessage(
                 text='Введите комментарий:',
                 buttons=[
-                    BotServiceMessageButton(
-                        title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                    ),
+                    BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
                 ],
             ),
             BotServiceRegisterNextMessageHandler(callback=process_comment_input),
@@ -768,9 +674,7 @@ class BotService:
 
     def build_report_preview(self) -> BotServiceMessage:
         report = self.report_builder.preview_complete_report()
-        if parent_id := self.student_storage.get_parent_id(
-            student_id=report.student_id
-        ):
+        if parent_id := self.student_storage.get_parent_id(student_id=report.student_id):
             button_send_and_save_title = 'Сохранить и отправить отчёт'
         else:
             button_send_and_save_title = 'Сохранить отчёт'
@@ -779,12 +683,8 @@ class BotService:
         return BotServiceMessage(
             text=text,
             buttons=[
-                BotServiceMessageButton(
-                    title='В меню', callback_data=GoBackToAdminPanelCallbackData()
-                ),
-                BotServiceMessageButton(
-                    title='Новый отчёт', callback_data=ReportBuilder1CallbackData()
-                ),
+                BotServiceMessageButton(title='В меню', callback_data=GoBackToAdminPanelCallbackData()),
+                BotServiceMessageButton(title='Новый отчёт', callback_data=ReportBuilder1CallbackData()),
                 BotServiceMessageButton(
                     title=button_send_and_save_title,
                     callback_data=SaveConfirmedReportCallbackData(parent_id=parent_id),
