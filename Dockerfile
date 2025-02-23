@@ -14,4 +14,4 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-cache
 
-CMD ["uv", "run", "--frozen", "python", "lessons_reporter_bot/main.py"]
+CMD ["uv", "run", "--no-sync", "python", "lessons_reporter_bot/main.py"]
