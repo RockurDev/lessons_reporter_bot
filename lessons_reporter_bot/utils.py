@@ -42,7 +42,9 @@ def measure_time(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         before_time = time.time()
         result = func(*args, **kwargs)
-        logging.error(f'call to {func} took {round((time.time() - before_time)*1000)} ms')
+        logging.error(
+            f'call to {func} took {round((time.time() - before_time)*1000)} ms'
+        )
         return result
 
     return wrapper

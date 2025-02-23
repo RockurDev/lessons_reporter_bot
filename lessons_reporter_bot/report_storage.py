@@ -6,6 +6,7 @@ import sqlalchemy
 from sqlmodel import Session, desc, func, select
 
 from lessons_reporter_bot.models import Report
+
 from .utils import measure_time
 
 
