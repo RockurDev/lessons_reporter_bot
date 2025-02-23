@@ -72,6 +72,7 @@ telegram_bot = telebot.TeleBot(token=settings.bot_token)
 telegram_bot.remove_webhook()
 
 logger = logging.getLogger()
+logging.basicConfig(stream=sys.stderr)
 
 LAST_MESSAGE_IDS: dict[int, list[int]] = defaultdict(list)
 
@@ -348,9 +349,11 @@ if __name__ == '__main__':
     logging.info(f"using {"webhook" if settings.webhook_url else "long polling"}")
     if settings.webhook_url:
         telegram_bot.run_webhooks(
-            listen= "0.0.0.0",
-            
-            port=80,url_path="/", webhook_url=settings.webhook_url, allowed_updates=allowed_updates
+            listen='0.0.0.0',
+            port=80,
+            url_path='/',
+            webhook_url=settings.webhook_url,
+            allowed_updates=allowed_updates,
         )
     else:
         telegram_bot.polling(
