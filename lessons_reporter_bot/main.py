@@ -348,6 +348,7 @@ if __name__ == '__main__':
     logging.info(f"using {"webhook" if settings.webhook_url else "long polling"}")
     if settings.webhook_url:
         telegram_bot.run_webhooks(
+            listen= "0.0.0.0",
             port=80, webhook_url=settings.webhook_url, allowed_updates=allowed_updates
         )
     else:
