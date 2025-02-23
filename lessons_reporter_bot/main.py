@@ -351,8 +351,7 @@ if __name__ == '__main__':
         telegram_bot.run_webhooks(
             listen='0.0.0.0',
             port=80,
-            url_path='/',
-            webhook_url=settings.webhook_url,
+            webhook_url=settings.webhook_url + "/" + settings.bot_token + "/",
             allowed_updates=allowed_updates,
         )
     else:
