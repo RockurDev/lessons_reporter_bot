@@ -72,7 +72,6 @@ telegram_bot = telebot.TeleBot(token=settings.bot_token)
 telegram_bot.remove_webhook()
 
 logger = logging.getLogger()
-logging.basicConfig(stream=sys.stderr)
 
 LAST_MESSAGE_IDS: dict[int, list[int]] = defaultdict(list)
 
@@ -226,7 +225,7 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
                 )
 
         case ReportBuilder5SetHomeworkStatusCallbackData():
-            logging.info('data.homework_status:', data.homework_status)
+            logging.error('data.homework_status:', data.homework_status)
             report_builder.set_homework_status_5(data.homework_status)
             process_bot_service_handler_results(
                 bot_service.build_report_6_is_proactive_setting(),
@@ -338,15 +337,15 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
             )
 
         case other_callback_data:
-            logging.info('other_callback_data', other_callback_data)
+            logging.error('other_callback_data', other_callback_data)
 
 
 if __name__ == '__main__':
     SQLModel.metadata.create_all(engine)
-    logging.info('Started bot')
+    logging.error('Started bot')
     telegram_bot.delete_webhook()
     allowed_updates = ['message', 'callback_query']
-    logging.info(f"using {"webhook" if settings.webhook_url else "long polling"}")
+    logging.error(f"using {"webhook" if settings.webhook_url else "long polling"}")
     if settings.webhook_url:
         telegram_bot.run_webhooks(
             listen='0.0.0.0',
