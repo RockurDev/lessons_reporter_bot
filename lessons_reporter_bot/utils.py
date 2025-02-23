@@ -1,4 +1,7 @@
+import logging
+import time
 from dataclasses import dataclass
+from typing import Callable, ParamSpec, TypeVar
 
 from lessons_reporter_bot.callback_data import (
     ReportBuilderShowItemListCallbackData,
@@ -29,3 +32,17 @@ def paginate(
         is_last_page=data.page == total_pages or len(items) == 0,
         items=items[start : start + page_size],
     )
+
+
+P = ParamSpec('P')
+T = TypeVar('T')
+
+
+def measure_time(func: Callable[P, T]) -> Callable[P, T]:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        before_time = time.time()
+        result = func(*args, **kwargs)
+        logging.error(f'call to {func} took {round((time.time() - before_time)*1000)} ms')
+        return result
+
+    return wrapper

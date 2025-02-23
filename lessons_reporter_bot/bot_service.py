@@ -42,7 +42,7 @@ from lessons_reporter_bot.report_storage import ReportStorage
 from lessons_reporter_bot.settings import UserId
 from lessons_reporter_bot.student_storage import StudentStorage
 from lessons_reporter_bot.topic_storage import TopicStorage
-from lessons_reporter_bot.utils import paginate
+from lessons_reporter_bot.utils import measure_time, paginate
 
 FORMATTED_HOMEWORK_STATUS_MAP = {
     2: 'выполнено',
@@ -233,6 +233,7 @@ class BotService:
                 ],
             )
 
+    @measure_time
     def show_items_list(self, data: ShowItemsListCallbackData) -> BotServiceMessage:
         if data.i_t == 'S':
             formatted_items = [

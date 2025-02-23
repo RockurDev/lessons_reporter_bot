@@ -6,21 +6,7 @@ import sqlalchemy
 from sqlmodel import Session, desc, func, select
 
 from lessons_reporter_bot.models import Report
-
-P = ParamSpec('P')
-T = TypeVar('T')
-
-
-def measure_time(func: Callable[P, T]) -> Callable[P, T]:
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        before_time = time.time()
-        result = func(*args, **kwargs)
-        logging.error(
-            f'call to {func} took {round((time.time() - before_time)*1000)} ms'
-        )
-        return result
-
-    return wrapper
+from .utils import measure_time
 
 
 class ReportStorage:

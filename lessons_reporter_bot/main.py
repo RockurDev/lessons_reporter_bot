@@ -50,7 +50,7 @@ from lessons_reporter_bot.report_storage import ReportStorage
 from lessons_reporter_bot.settings import Settings
 from lessons_reporter_bot.student_storage import StudentStorage
 from lessons_reporter_bot.topic_storage import TopicStorage
-from lessons_reporter_bot.utils import FIRST_PAGE
+from lessons_reporter_bot.utils import FIRST_PAGE, measure_time
 
 settings = Settings()
 
@@ -135,6 +135,7 @@ def welcome(message: Message) -> None:
 
 
 @telegram_bot.callback_query_handler(lambda call: call)
+@measure_time
 def catchall_callback_handler(call: CallbackQuery) -> None:
     user_id = call.from_user.id
     match data := any_callback_data_validator.validate_json(call.data):
