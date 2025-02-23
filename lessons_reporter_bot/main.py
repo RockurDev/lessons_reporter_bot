@@ -1,3 +1,5 @@
+import logging
+import sys
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -68,6 +70,9 @@ bot_service = BotService(
 )
 telegram_bot = telebot.TeleBot(token=settings.bot_token)
 telegram_bot.remove_webhook()
+
+logger = logging.getLogger()
+logging.basicConfig(stream=sys.stderr)
 
 LAST_MESSAGE_IDS: dict[int, list[int]] = defaultdict(list)
 
@@ -221,7 +226,7 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
                 )
 
         case ReportBuilder5SetHomeworkStatusCallbackData():
-            print('data.homework_status:', data.homework_status)
+            logging.info('data.homework_status:', data.homework_status)
             report_builder.set_homework_status_5(data.homework_status)
             process_bot_service_handler_results(
                 bot_service.build_report_6_is_proactive_setting(),
@@ -333,14 +338,15 @@ def catchall_callback_handler(call: CallbackQuery) -> None:
             )
 
         case other_callback_data:
-            print('other_callback_data', other_callback_data)
+            logging.info('other_callback_data', other_callback_data)
 
 
 if __name__ == '__main__':
     SQLModel.metadata.create_all(engine)
-    print('Started bot')
+    logging.info('Started bot')
     telegram_bot.delete_webhook()
     allowed_updates = ['message', 'callback_query']
+    logging.info(f"using {"webhook" if settings.webhook_url else "long polling"}")
     if settings.webhook_url:
         telegram_bot.run_webhooks(
             port=80, webhook_url=settings.webhook_url, allowed_updates=allowed_updates
